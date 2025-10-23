@@ -538,7 +538,6 @@
         }
     `;
     document.head.appendChild(widgetStyles);
-
     // Default configuration
     const defaultSettings = {
         webhook: {
@@ -602,68 +601,114 @@
     const chatWindow = document.createElement('div');
     chatWindow.className = `chat-window ${settings.style.position === 'left' ? 'left-side' : 'right-side'}`;
 
-    // Create welcome screen with header
-    const welcomeScreenHTML = `
-        <div class="chat-header">
-            <img class="chat-header-logo" src="${settings.branding.logo}" alt="${settings.branding.name}">
-            <span class="chat-header-title">${settings.branding.name}</span>
-            <button class="chat-close-btn">×</button>
-        </div>
-        <div class="chat-welcome">
-            <h2 class="chat-welcome-title">${settings.branding.welcomeText}</h2>
-            <button class="chat-start-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                </svg>
-                Start chatting
-            </button>
-            <p class="chat-response-time">${settings.branding.responseTimeText}</p>
-        </div>
-        <div class="user-registration">
-            <h2 class="registration-title">Please enter your details to start chatting</h2>
-            <form class="registration-form">
-                <div class="form-field">
-                    <label class="form-label" for="chat-user-name">Name</label>
-                    <input type="text" id="chat-user-name" class="form-input" placeholder="Your name" 
-                           required maxlength="50" minlength="2" 
-                           title="Name can only contain letters, spaces, hyphens, and dots">
-                    <div class="error-text" id="name-error"></div>
-                </div>
-                <div class="form-field">
-                    <label class="form-label" for="chat-user-email">Email</label>
-                    <input type="email" id="chat-user-email" class="form-input" placeholder="Your email address" 
-                           required maxlength="100" minlength="5" 
-                           pattern="[a-zA-Z0-9][a-zA-Z0-9._#-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}"
-                           title="Please enter a valid email address">
-                    <div class="error-text" id="email-error"></div>
-                </div>
-                <button type="submit" class="submit-registration">Continue to Chat</button>
-            </form>
-        </div>
+    // Create chat header with safe DOM manipulation
+    const chatHeader = document.createElement('div');
+    chatHeader.className = 'chat-header';
+
+    const headerLogo = document.createElement('img');
+    headerLogo.className = 'chat-header-logo';
+    // Sanitize and validate logo URL
+    const logoUrl = String(settings.branding.logo || '').trim();
+    if (
+        logoUrl &&
+        (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:image/'))
+    ) {
+        headerLogo.src = logoUrl;
+    } else {
+        // Use a safe default or data URL
+        headerLogo.src =
+            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="32" height="32"%3E%3C/svg%3E';
+    }
+    headerLogo.alt = htmlEncode(String(settings.branding.name || 'Chat'));
+
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'chat-header-title';
+    headerTitle.textContent = String(settings.branding.name);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'chat-close-btn';
+    closeBtn.textContent = '×';
+
+    chatHeader.appendChild(headerLogo);
+    chatHeader.appendChild(headerTitle);
+    chatHeader.appendChild(closeBtn);
+
+    // Create welcome section with safe DOM manipulation
+    const welcomeDiv = document.createElement('div');
+    welcomeDiv.className = 'chat-welcome';
+
+    const welcomeTitle = document.createElement('h2');
+    welcomeTitle.className = 'chat-welcome-title';
+    welcomeTitle.textContent = String(settings.branding.welcomeText); 
+
+    const startBtn = document.createElement('button');
+    startBtn.className = 'chat-start-btn';
+    startBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Start chatting
     `;
 
-    // Create chat interface without duplicating the header
-    const chatInterfaceHTML = `
-        <div class="chat-body">
-            <div class="chat-messages"></div>
-            <div class="chat-controls">
-                <div class="chat-input-row">
-                    <textarea class="chat-textarea" placeholder="Type your message here..." rows="1" 
-                             maxlength="500" 
-                             title="Maximum 500 characters. Please ask normal questions only."></textarea>
-                    <button class="chat-submit">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M22 2L11 13"></path>
-                            <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
-                        </svg>
-                    </button>
-                </div>
-                <div class="chat-char-counter">0/500</div>
+    const responseTime = document.createElement('p');
+    responseTime.className = 'chat-response-time';
+    responseTime.textContent = String(settings.branding.responseTimeText);
+
+    welcomeDiv.appendChild(welcomeTitle);
+    welcomeDiv.appendChild(startBtn);
+    welcomeDiv.appendChild(responseTime);
+
+    // Create registration form (safe static HTML)
+    const registrationDiv = document.createElement('div');
+    registrationDiv.className = 'user-registration';
+    registrationDiv.innerHTML = `
+        <h2 class="registration-title">Please enter your details to start chatting</h2>
+        <form class="registration-form">
+            <div class="form-field">
+                <label class="form-label" for="chat-user-name">Name</label>
+                <input type="text" id="chat-user-name" class="form-input" placeholder="Your name" 
+                       required maxlength="50" minlength="2" 
+                       title="Name can only contain letters, spaces, hyphens, and dots">
+                <div class="error-text" id="name-error"></div>
             </div>
+            <div class="form-field">
+                <label class="form-label" for="chat-user-email">Email</label>
+                <input type="email" id="chat-user-email" class="form-input" placeholder="Your email address" 
+                       required maxlength="100" minlength="5" 
+                       pattern="[a-zA-Z0-9][a-zA-Z0-9._#-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}"
+                       title="Please enter a valid email address">
+                <div class="error-text" id="email-error"></div>
+            </div>
+            <button type="submit" class="submit-registration">Continue to Chat</button>
+        </form>
+    `;
+
+    // Create chat interface (safe static HTML)
+    const chatBodyElement = document.createElement('div');
+    chatBodyElement.className = 'chat-body';
+    chatBodyElement.innerHTML = `
+        <div class="chat-messages"></div>
+        <div class="chat-controls">
+            <div class="chat-input-row">
+                <textarea class="chat-textarea" placeholder="Type your message here..." rows="1" 
+                         maxlength="500" 
+                         title="Maximum 500 characters. Please ask normal questions only."></textarea>
+                <button class="chat-submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 2L11 13"></path>
+                        <path d="M22 2l-7 20-4-9-9-4 20-7z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="chat-char-counter">0/500</div>
         </div>
     `;
 
-    chatWindow.innerHTML = welcomeScreenHTML + chatInterfaceHTML;
+    // Assemble chat window safely using DOM API
+    chatWindow.appendChild(chatHeader);
+    chatWindow.appendChild(welcomeDiv);
+    chatWindow.appendChild(registrationDiv);
+    chatWindow.appendChild(chatBodyElement);
 
     // Create toggle button
     const launchButton = document.createElement('button');
@@ -672,7 +717,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
         </svg>
-        <span class="chat-launcher-text">Need help?</span>`;
+        <span class="chat-launcher-text">Explore more</span>`;
 
     // Add elements to DOM
     widgetRoot.appendChild(chatWindow);
@@ -713,8 +758,8 @@
     function sanitizeChatMessage(input) {
         // More restrictive sanitization for chat messages but support Vietnamese
         return input
-            .replace(/[<>\"'&{}[\]\\\/]/g, '') // Remove HTML and code-related chars
-            .replace(/[^\p{L}\p{N}\s.,!?@.:;()-]/gu, '') // Allow all Unicode letters, numbers, and Vietnamese punctuation
+            .replace(/[<>\"'&{}[\]\\\/]/g, '')
+            .replace(/[^\p{L}\p{N}\s.,!?@.:;()-]/gu, '')
             .trim();
     }
 
@@ -785,7 +830,6 @@
             return { isValid: false, message: 'Name must be between 2 and 50 characters' };
         }
 
-        // Allow letters (including Vietnamese), spaces, hyphens, dots, and parentheses
         if (!/^[\p{L}\s.()'-]+$/u.test(sanitized)) {
             return { isValid: false, message: 'Name can only contain letters, spaces, hyphens, dots, and parentheses' };
         }
@@ -823,15 +867,145 @@
         return indicator;
     }
 
-    // Function to convert URLs in text to clickable links
-    function linkifyText(text) {
-        // URL pattern that matches http, https, ftp links
-        const urlPattern = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    function htmlEncode(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 
-        // Convert URLs to HTML links
-        return text.replace(urlPattern, function (url) {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link">${url}</a>`;
+    // Helper function to validate HTTP/HTTPS URLs only - more strict validation
+    function isValidHttpUrl(string) {
+        // Basic checks first
+        if (!string || typeof string !== 'string') {
+            return false;
+        }
+
+        // Check length to prevent DoS attacks
+        if (string.length > 2048) {
+            return false;
+        }
+
+        // Check for dangerous patterns in URL BEFORE validation
+        const dangerousPatterns = [
+            /<script/i,
+            /javascript:/i,
+            /data:/i,
+            /vbscript:/i,
+            /on\w+=/i,
+            /%3C/i, // encoded <
+            /%3E/i, // encoded >
+            /%3c/i, // lowercase encoded <
+            /%3e/i, // lowercase encoded >
+        ];
+
+        for (const pattern of dangerousPatterns) {
+            if (pattern.test(string)) {
+                return false;
+            }
+        }
+
+        let url;
+        try {
+            url = new URL(string);
+        } catch (_) {
+            return false;
+        }
+
+        // Only allow http and https protocols - strict comparison
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            return false;
+        }
+
+        return true;
+    }
+
+    function linkifyText(text) {
+        // First, HTML encode the entire text to prevent XSS
+        const encodedText = htmlEncode(text);
+
+        // More restrictive URL pattern - only http/https with strict domain format
+        // Only matches proper URLs with domain names (requires at least one dot)
+        const urlPattern =
+            /\b(https?):\/\/[a-zA-Z0-9][-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_\+.~#?&\/=]*/gi;
+
+        // Convert URLs to HTML links WITHOUT decoding (prevents encoding bypass)
+        return encodedText.replace(urlPattern, function (match) {
+            // CRITICAL FIX: Don't decode the URL! Work directly with encoded text
+            // This prevents XSS through URL encoding bypass attacks
+
+            // Simple protocol check on the already-encoded text
+            const lowerMatch = match.toLowerCase();
+            const startsWithHttp =
+                lowerMatch.startsWith('http://') ||
+                lowerMatch.startsWith('https://') ||
+                lowerMatch.startsWith('&lt;http://') ||
+                lowerMatch.startsWith('&lt;https://');
+
+            // Only create link if it starts with http/https
+            if (startsWithHttp && match.length < 500) {
+                // Use the already-encoded URL directly for both href and display
+                // No decoding = no opportunity for encoding bypass
+                return `<a href="${match}" target="_blank" rel="noopener noreferrer" class="chat-link">${match}</a>`;
+            } else {
+                // Return as plain encoded text if invalid or too long
+                return match;
+            }
         });
+    }
+
+    // Safe function to set bot message content with comprehensive XSS protection
+    function setBotMessageContent(messageElement, text) {
+        // Validate and sanitize the response text
+        if (typeof text !== 'string') {
+            text = String(text || '');
+        }
+
+        // Comprehensive sanitization - remove ALL potentially dangerous content
+        const sanitizedText = text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframe tags
+            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '') // Remove object tags
+            .replace(/<embed\b[^>]*>/gi, '') // Remove embed tags
+            .replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '') // Remove form tags
+            .replace(/javascript:/gi, '') // Remove javascript: protocols
+            .replace(/vbscript:/gi, '') // Remove vbscript: protocols
+            .replace(/data:/gi, '') // Remove data: protocols (can be dangerous)
+            .replace(/on\w+\s*=/gi, '') // Remove ALL event handlers (onclick, onload, etc)
+            .replace(/<link\b[^>]*>/gi, '') // Remove link tags
+            .replace(/<meta\b[^>]*>/gi, '') // Remove meta tags
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove style tags
+            .replace(/expression\s*\(/gi, '') // Remove CSS expressions
+            .replace(/url\s*\(/gi, '') // Remove CSS url() functions
+            .replace(/@import/gi, '') // Remove CSS @import
+            .replace(/&lt;script/gi, '') // Remove encoded script tags
+            .replace(/&lt;iframe/gi, '') // Remove encoded iframe tags
+            .replace(/&#x3C;script/gi, '') // Remove hex-encoded script tags
+            .replace(/&#60;script/gi, ''); // Remove decimal-encoded script tags
+
+        // Additional validation - check for suspicious JavaScript patterns
+        const suspiciousPatterns = [
+            /eval\s*\(/gi,
+            /function\s*\(/gi,
+            /constructor\s*\(/gi,
+            /prototype\s*\[/gi,
+            /window\s*\[/gi,
+            /document\s*\[/gi,
+            /alert\s*\(/gi,
+            /confirm\s*\(/gi,
+            /prompt\s*\(/gi,
+        ];
+
+        for (const pattern of suspiciousPatterns) {
+            if (pattern.test(sanitizedText)) {
+                // If suspicious content detected, return safe fallback message
+                messageElement.textContent = '⚠️ Response contains unsafe content and has been blocked for security.';
+                messageElement.style.color = '#ef4444';
+                return;
+            }
+        }
+
+        // Use linkifyText which now has secure URL handling and HTML encoding
+        messageElement.innerHTML = linkifyText(sanitizedText);
     }
 
     // Show registration form
@@ -941,7 +1115,7 @@
             const messageText = Array.isArray(userInfoResponseData)
                 ? userInfoResponseData[0].output
                 : userInfoResponseData.output;
-            botMessage.innerHTML = linkifyText(messageText);
+            setBotMessageContent(botMessage, messageText);
             messagesContainer.appendChild(botMessage);
 
             // Add sample questions if configured
@@ -1062,7 +1236,7 @@
             const botMessage = document.createElement('div');
             botMessage.className = 'chat-bubble bot-bubble';
             const responseText = Array.isArray(responseData) ? responseData[0].output : responseData.output;
-            botMessage.innerHTML = linkifyText(responseText);
+            setBotMessageContent(botMessage, responseText);
             messagesContainer.appendChild(botMessage);
 
             // Scroll to bottom after adding message
